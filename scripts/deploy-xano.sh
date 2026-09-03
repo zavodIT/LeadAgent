@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # LeadAgent Xano deployment configuration.
-WORKSPACE_ID="168182"
+WORKSPACE_ID="1"
 XANO_DIRECTORY="xano"
 NODE20_BIN="/opt/homebrew/opt/node@20/bin"
 

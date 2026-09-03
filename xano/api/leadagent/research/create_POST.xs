@@ -45,7 +45,8 @@ query "research" verb=POST {
       timeout = 30
     } as $serp
     var $news {
-      value = $serp.response.result.news_results
+      // SerpApi may omit news_results for a valid zero-match response.
+      value = $serp.response.result|get:"news_results":[]
     }
     var $qualification_evidence {
       // Keep qualification fast and predictable. The full SerpApi response is
