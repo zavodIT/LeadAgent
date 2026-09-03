@@ -32,8 +32,13 @@ xano workspace push -w 168182 -d xano
 `POST /research` passes the saved Google News evidence to the tool-free Xano
 `Lead Qualification Agent`. The agent is grounded to those results, deduplicates
 companies, scores fit and urgency, explains why each lead matters now, and drafts
-source-backed outreach. The frontend consumes `qualification` when available and
+source-backed qualification. The frontend consumes `qualification` when available and
 falls back to the existing deterministic parser if the agent returns no usable leads.
+
+Opening a company calls `POST /outreach/generate`. A separate tool-free
+`Outreach Message Agent` selects one grounded trigger and one relevant seller
+benefit instead of copying the intelligence brief or CV into the message. The
+same endpoint regenerates drafts for the selected contact, role, and channel.
 
 The current agent uses Xano's free development model, so no model credential is
 stored in the repository or exposed to Vite.
