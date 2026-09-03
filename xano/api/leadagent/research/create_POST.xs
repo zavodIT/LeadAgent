@@ -16,9 +16,10 @@ query "research" verb=POST {
       value = $input.offer_query
     }
     var $search_query {
-      // Target-market prose stays out of the query because it is often too broad.
-      // Offer capabilities, however, must constrain the evidence we retrieve.
-      value = $input.industry ~ " (startup OR company) (" ~ $offer_filter ~ ") (funding OR raises OR raised OR hiring OR launches OR expansion) when:90d"
+      // Collect market signals broadly. Requiring CV skills in the news headline
+      // eliminates valid buyers because funding and hiring articles rarely name
+      // implementation technologies. The qualification agent applies offer fit.
+      value = $input.industry ~ " (startup OR company) (funding OR raises OR raised OR hiring OR launches OR expansion) when:90d"
     }
     db.add research_runs {
       data = {
