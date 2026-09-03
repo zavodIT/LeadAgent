@@ -107,6 +107,11 @@ query "research" verb=POST {
       }
     } as $completed_run
   }
-  response = {run: $completed_run, results: $news, qualification: $qualification}
+  response = {
+    run          : $completed_run,
+    results      : $news,
+    qualification: $qualification,
+    search_error : $serp.response.result|get:"error":""
+  }
   guid = "9z28ubZBxgAbF9Z7MeYQg0wF9Tw"
 }
