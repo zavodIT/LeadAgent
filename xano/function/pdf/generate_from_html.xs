@@ -1,4 +1,4 @@
-// Renders HTML through Nutrient DWS and stores the resulting PDF privately.
+// Renders HTML through Nutrient DWS and stores the resulting PDF in Xano.
 // NUTRIENT_API_KEY must be configured in Xano Keys & Variables.
 function "pdf/generate_from_html" {
   input {
@@ -7,35 +7,37 @@ function "pdf/generate_from_html" {
   }
   stack {
     var $pdf_filename {
-      value = $input.filename|default:"leadagent-report.pdf"
+      value = "leadagent-report.pdf"
     }
-    storage.create_file_resource {
-      filename = "index.html"
-      filedata = $input.html
-    } as $html_file
+    conditional {
+      if ($input.filename != null && $input.filename != "") {
+        var.update $pdf_filename {
+          value = $input.filename
+        }
+      }
+    }
+    var $boundary {
+      value = "----LeadAgentNutrientBoundary7MA4YWxkTrZu0gW"
+    }
+    var $multipart_body {
+      // Constructing the small HTML multipart payload directly keeps this
+      // integration compatible with Xano plans without file-resource support.
+      value = "--" ~ $boundary ~ "\r\n" ~ "Content-Disposition: form-data; name=\"html\"; filename=\"index.html\"\r\n" ~ "Content-Type: text/html; charset=utf-8\r\n\r\n" ~ $input.html ~ "\r\n--" ~ $boundary ~ "--\r\n"
+    }
     api.request {
       url = "https://api.nutrient.io/processor/generate_pdf"
       method = "POST"
-      params = {}
-        |set:"html":$html_file
+      params = $multipart_body
       headers = []
         |array_push:("Authorization: Bearer " ~ $env.NUTRIENT_API_KEY)
+        |array_push:("Content-Type: multipart/form-data; boundary=" ~ $boundary)
       timeout = 60
     } as $nutrient
-    storage.create_attachment {
-      access = "private"
-      value = $nutrient.response.result
-      filename = $pdf_filename
-    } as $pdf
-    storage.sign_private_url {
-      pathname = $pdf.path
-      ttl = 900
-    } as $download_url
   }
   response = {
-    file        : $pdf,
-    download_url: $download_url,
-    expires_in  : 900
+    filename      : $pdf_filename,
+    mime          : "application/pdf",
+    content_base64: $nutrient.response.result|base64_encode
   }
   guid = "qZ7rP2nV8kLm4sTx1cWd9aFj3Y"
 }

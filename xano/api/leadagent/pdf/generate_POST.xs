@@ -1,4 +1,4 @@
-// Generates a private PDF from complete HTML and returns a 15-minute URL.
+// Generates a PDF from complete HTML and returns base64-encoded PDF bytes.
 // The Nutrient credential never leaves Xano.
 query "pdf/generate" verb=POST {
   api_group = "LeadAgent"

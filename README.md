@@ -40,8 +40,9 @@ stored in the repository or exposed to Vite.
 ## PDF generation
 
 `POST /pdf/generate` accepts complete HTML and an optional `.pdf` filename. Xano
-uploads the HTML to Nutrient DWS Processor API, stores the generated document in
-private file storage, and returns a signed download URL valid for 15 minutes.
+uploads the HTML to Nutrient DWS Processor API and returns the PDF as base64 with
+its filename and MIME type. Returning the bytes inline avoids exposing the
+Nutrient credential and works on Xano plans without server-side file storage.
 `NUTRIENT_API_KEY` stays in Xano and is never returned to the browser.
 
 ```json
