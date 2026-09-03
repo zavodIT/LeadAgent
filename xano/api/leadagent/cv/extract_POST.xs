@@ -28,8 +28,9 @@ query "cv/extract" verb=POST {
       timeout = 60
     } as $extraction
   }
-  // Keep the public endpoint response small and compatible with the frontend:
-  // { professional_profile: "..." } rather than the extraction service envelope.
-  response = $extraction.response.result.output.data
+  // Nutrient's response envelope can vary by extraction mode. Return it intact;
+  // the frontend recursively locates professional_profile without relying on a
+  // brittle output.data path.
+  response = $extraction.response.result
   guid = "qPpOwrEYMS7iBsKQ4YzI-1Aconw"
 }
