@@ -7,13 +7,14 @@ LeadAgent turns live market signals into explainable, ready-to-contact B2B oppor
 - Xano: database, REST API, SerpApi orchestration, AI qualification, pipeline state
 - SerpApi Google News: live funding and growth evidence
 - React/Vite: research form and ranked lead dashboard
-- Nutrient DWS: planned PDF intelligence brief export
+- Nutrient DWS: server-side PDF intelligence brief export
 
 ## Local setup
 
 1. Copy `.env.example` to `.env` and set `VITE_XANO_API_BASE` after the Xano API group is deployed.
 2. Add `SERPAPI_API_KEY` under Xano Dashboard > Keys & Variables. Never expose it in Vite variables.
-3. Run `npm install` and `npm run dev`.
+3. Add `NUTRIENT_API_KEY` under Xano Dashboard > Keys & Variables for PDF generation.
+4. Run `npm install` and `npm run dev`.
 
 ## Xano workflow
 
@@ -35,6 +36,20 @@ falls back to the existing deterministic parser if the agent returns no usable l
 
 The current agent uses Xano's free development model, so no model credential is
 stored in the repository or exposed to Vite.
+
+## PDF generation
+
+`POST /pdf/generate` accepts complete HTML and an optional `.pdf` filename. Xano
+uploads the HTML to Nutrient DWS Processor API, stores the generated document in
+private file storage, and returns a signed download URL valid for 15 minutes.
+`NUTRIENT_API_KEY` stays in Xano and is never returned to the browser.
+
+```json
+{
+  "html": "<!doctype html><html><body><h1>Lead brief</h1></body></html>",
+  "filename": "lead-brief.pdf"
+}
+```
 
 ## Company enrichment
 
