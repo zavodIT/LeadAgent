@@ -209,17 +209,32 @@ function App(){
  const lead=leads[selected]||demo[0],badge=badges[lead.type]
  useEffect(()=>{if(screen!=='loading')return;const timer=setInterval(()=>setMsg(v=>Math.min(3,v+1)),900);return()=>clearInterval(timer)},[screen])
  function extractedResume(value:unknown):string{
-  if(typeof value==='string')return value
+  if(typeof value==='string'){
+   const clean=value.trim()
+   if(/^[{[]/.test(clean)){try{return extractedResume(JSON.parse(clean))}catch{/* Keep a genuine text value. */}}
+   return clean
+  }
   if(!value||typeof value!=='object')return ''
   const record=value as Record<string,unknown>
-  for(const key of ['resume_text','plainText','markdown','text','value','data','result']){const found=extractedResume(record[key]);if(found.trim().length>80)return found}
-  for(const item of Object.values(record)){const found=extractedResume(item);if(found.trim().length>80)return found}
+  const pages=Array.isArray(record.pages)?record.pages.map(page=>extractedResume(page)).filter(Boolean).join('\n'):''
+  if(pages)return pages
+  for(const key of ['resume_text','plainText','markdown','text','value','data','result']){const found=extractedResume(record[key]);if(found)return found}
   return ''
+ }
+ function extractionError(value:unknown):string{
+  if(!value||typeof value!=='object')return ''
+  const record=value as Record<string,unknown>,error=record.error
+  if(typeof error==='string')return error
+  if(error&&typeof error==='object'){
+   const details=(error as Record<string,unknown>).details
+   if(typeof details==='string')return `CV extraction service: ${details}`
+  }
+  return typeof record.message==='string'?record.message:''
  }
  async function uploadCv(file?:File){
   if(!file||cvLoading)return
   setError('');setCvLoading(true);setCvName(file.name)
-  try{if(!API)throw new Error('VITE_XANO_API_BASE is not configured');if(file.size>10*1024*1024)throw new Error('CV must be smaller than 10 MB');const form=new FormData();form.append('file',file);const response=await fetch(`${API}/cv/extract`,{method:'POST',body:form});const data=await response.json().catch(()=>null);if(!response.ok)throw new Error((data as {message?:string}|null)?.message||`CV extraction failed (${response.status})`);const text=extractedResume(data).trim();if(!text)throw new Error('No text could be extracted from this CV');setOffer(text.slice(0,MAX_OFFER_LENGTH))}catch(e){setCvName('');setError(e instanceof Error?e.message:'Could not extract this CV')}finally{setCvLoading(false)}
+  try{if(!API)throw new Error('VITE_XANO_API_BASE is not configured');if(file.size>10*1024*1024)throw new Error('CV must be smaller than 10 MB');const form=new FormData();form.append('file',file);const response=await fetch(`${API}/cv/extract`,{method:'POST',body:form});const data=await response.json().catch(()=>null);const serviceError=extractionError(data);if(!response.ok||serviceError)throw new Error(serviceError||`CV extraction failed (${response.status})`);const text=extractedResume(data).trim();if(!text)throw new Error('No text could be extracted from this CV');setOffer(text.slice(0,MAX_OFFER_LENGTH))}catch(e){setCvName('');setError(e instanceof Error?e.message:'Could not extract this CV')}finally{setCvLoading(false)}
  }
  async function search(){setError('');setMsg(0);setScreen('loading');try{let next=demo;if(API){const researchOffer=offer.trim().slice(0,MAX_RESEARCH_OFFER_LENGTH);const runResearch=async(offerQuery:string)=>{const response=await fetch(`${API}/research`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({offer:researchOffer,offer_query:offerQuery,industry,location:market,stages:[size],signals:['funding','hiring','launch']})});if(!response.ok){const body=await response.json().catch(()=>null) as {message?:string}|null;throw new Error(body?.message||`Research failed (${response.status})`)}return response.json()};let data=await runResearch(offerSearchTerms(researchOffer,industry));if(!(data.results||[]).length)data=await runResearch('startup OR software OR technology');next=fromQualification(data.qualification);if(!next.length)next=fromResults(data.results||[],researchOffer,industry)}setLeads(next);setScreen('results')}catch(e){setError(e instanceof Error?e.message:'Research failed');setScreen('form')}}
  async function open(i:number){const initial=leads[i];setSelected(i);prepareOutreach(initial);setScreen('detail');if(websiteUrl(initial.website)&&initial.description)return;setEnriching(true);const enriched=await enrichLead(initial);setLeads(current=>current.map((item,index)=>index===i?enriched:item));setEnriching(false)}
