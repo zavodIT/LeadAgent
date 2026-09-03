@@ -6,16 +6,20 @@ query "cv/extract" verb=POST {
   }
   stack {
     api.request {
-      url = "https://api.nutrient.io/build"
+      url = "https://api.nutrient.io/extraction/extract"
       method = "POST"
       params = {}
-        |set:"document":$input.file
+        |set:"file":$input.file
         |set:"instructions":({
-          parts: [{file: "document"}]
-          output: {
-            type: "json-content"
-            plainText: true
-            structuredText: false
+          schema: {
+            type: "object"
+            properties: {
+              resume_text: {
+                type: "string"
+                description: "Complete readable text of the CV, preserving headings and line breaks."
+              }
+            }
+            required: ["resume_text"]
           }
         }|json_encode)
       headers = []
