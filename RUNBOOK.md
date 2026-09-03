@@ -4,7 +4,7 @@
 
 ### Target
 
-- Workspace: `1` (`Aleksandr's Workspace`)
+- Workspace: `2` (`LeadAgent`, production API canonical `leadagent-v2`)
 - Source directory: `xano/`
 - Credentials: existing Xano CLI profile from `profile.yaml` and `~/.xano/credentials.yaml`
 - Deployment wrapper: `scripts/deploy-xano.sh`
@@ -52,14 +52,14 @@ Prefer a targeted deployment when only one endpoint was changed.
 ```bash
 PATH="/opt/homebrew/opt/node@20/bin:$PATH" \
   xano workspace push \
-  --workspace 1 \
+  --workspace 2 \
   --directory xano \
   --include 'api/leadagent/research/create_POST.xs' \
   --dry-run
 
 PATH="/opt/homebrew/opt/node@20/bin:$PATH" \
   xano workspace push \
-  --workspace 1 \
+  --workspace 2 \
   --directory xano \
   --include 'api/leadagent/research/create_POST.xs'
 ```

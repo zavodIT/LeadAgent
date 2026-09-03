@@ -2,7 +2,9 @@
 set -euo pipefail
 
 # LeadAgent Xano deployment configuration.
-WORKSPACE_ID="1"
+# Xano CLI uses the instance-local ID. This is the LeadAgent workspace serving
+# the /api:leadagent-v2 production base URL.
+WORKSPACE_ID="2"
 XANO_DIRECTORY="xano"
 NODE20_BIN="/opt/homebrew/opt/node@20/bin"
 
