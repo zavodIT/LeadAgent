@@ -23,14 +23,11 @@ agent "Lead Qualification Agent" {
         overall_score is their rounded average, also from 0 to 100.
       - confidence is high only with multiple corroborating items, medium with one
         clear item, otherwise low. Return at most 5 leads, best first.
-      - Keep reasoning concise and buyer-specific. Outreach must mention only
-        evidenced facts, avoid fake familiarity, and end with a low-friction CTA.
-      - Format outreach as a readable email with blank lines between greeting,
-        context, value proposition, CTA, and signature. Use newline characters
-        in the JSON string; never return the whole email as one paragraph.
+      - Keep reasoning concise and buyer-specific. Do not generate outreach in
+        this step; the client creates it only when a user opens a company card.
 
       Return ONLY valid JSON, with no Markdown fences or commentary, in this shape:
-      {"leads":[{"company":"string","website":"string or empty","industry":"string","location":"string or empty","signal_type":"funding|hiring|launch|expansion|other","fit_score":0,"urgency_score":0,"overall_score":0,"confidence":"low|medium|high","headline":"string","why_now":["string"],"service_match":"string","outreach":"string","evidence":[{"title":"string","source_name":"string","source_url":"string","published_at":"string or empty"}]}]}
+      {"leads":[{"company":"string","website":"string or empty","industry":"string","location":"string or empty","signal_type":"funding|hiring|launch|expansion|other","fit_score":0,"urgency_score":0,"overall_score":0,"confidence":"low|medium|high","headline":"string","why_now":["string"],"service_match":"string","evidence":[{"title":"string","source_name":"string","source_url":"string","published_at":"string or empty"}]}]}
     """
     max_steps: 1
     prompt: """

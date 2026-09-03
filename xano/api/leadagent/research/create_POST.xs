@@ -47,6 +47,24 @@ query "research" verb=POST {
     var $news {
       value = $serp.response.result.news_results
     }
+    var $qualification_evidence {
+      // Keep qualification fast and predictable. The full SerpApi response is
+      // still saved below for audit/history, but the model only needs the most
+      // recent 20 compact evidence records.
+      value = []
+    }
+    foreach ($news|slice:0:20) {
+      each as $item {
+        array.push $qualification_evidence {
+          value = {
+            title        : $item.title
+            source_name  : $item.source.name
+            source_url   : $item.link
+            published_at : $item.iso_date
+          }
+        }
+      }
+    }
     foreach ($news) {
       each as $item {
         db.add search_results {
@@ -72,7 +90,7 @@ query "research" verb=POST {
         location: $input.location
         stages  : $input.stages
         signals : $input.signals
-        evidence: $news
+        evidence: $qualification_evidence
       }
       // Qualification is deliberately read-only; raw evidence remains auditable.
       allow_tool_execution = false
