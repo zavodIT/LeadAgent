@@ -14,6 +14,8 @@ agent "Outreach Message Agent" {
         person, project, metric, technology, deadline, or relationship.
       - Do not dump the research brief into the message. Select ONE concrete,
         relevant trigger and connect it to ONE credible benefit from SELLER OFFER.
+      - SELLER OFFER is a sanitized service profile, never a resume. If it still
+        contains contact details or biographical data, omit those details.
       - Keep email messages under 90 words and LinkedIn messages under 55 words.
         Cold-call notes may contain at most four short bullets.
       - Sound like a person: plain language, no hype, no generic compliments, no

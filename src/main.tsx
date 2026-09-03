@@ -100,6 +100,15 @@ function offerTerms(value:string,industry:string){
  return [...skills,...fallback].filter((term,index,all)=>all.findIndex(x=>x.toLowerCase()===term.toLowerCase())===index).slice(0,4)
 }
 function offerSearchTerms(value:string,industry:string){return offerTerms(value,industry).join(' OR ')||industry}
+function outreachOfferProfile(value:string,industry:string){
+ const compact=value.replace(/\s+/g,' ').trim()
+ const containsPersonalData=/[\w.+-]+@[\w.-]+\.[a-z]{2,}|(?:\+?\d[\d\s().-]{7,}\d)|linkedin|telegram|\b(?:resume|curriculum vitae|years? in software|founder\s*&?\s*cto)\b/i.test(compact)
+ if(compact.length<=400&&!containsPersonalData)return compact
+ const capabilities=capabilityTerms.filter(term=>new RegExp(`(^|[^a-z0-9])${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}([^a-z0-9]|$)`,'i').test(compact)).slice(0,8)
+ return capabilities.length
+  ?`Professional services in ${capabilities.join(', ')} for ${industry} companies.`
+  :`Professional services for ${industry} companies.`
+}
 function signalType(title:string):Lead['type']{
  if(/hir(?:e|es|ed|ing)|appoint|workforce|jobs?|headcount|cto|engineer/i.test(title))return 'hiring'
  if(/rais|fund|series|seed|valuation|investment|secures|lands|closes/i.test(title))return 'funded'
@@ -118,7 +127,7 @@ function fromResults(results:Result[],offer:string,industry:string):Lead[]{
   if(existing){existing.news.push(news);existing.bullets.push(`Additional signal: ${r.title}`);continue}
   const matches=terms.filter(term=>r.title.toLowerCase().includes(term)).length
   const type=signalType(r.title)
-  companies.set(key,{id:`live-${index}`,name,location:'Company details not verified',size:'',website:'Not verified',type,score:Math.min(96,72+matches*6+(type==='funded'?6:3)),signal:r.title,bullets:[`Evidence: ${r.title}`,`Source: ${source}`,matches?`Matches your offer on ${matches} capability${matches===1?'':'ies'}`:'Matches the offer-filtered search'],whyNow:[r.title,`Published by ${source}.`,'Company identity and contact details still need verification before outreach.'],news:[news],roles:[],trendDelta:'—',trendLabel:'No verified trend data',spark:[],outreach:`Hi ${name} team,\n\nI saw the recent news: ${r.title}\n\n${offer}. If this is relevant to your current priorities, would a short conversation be useful?\n\n- Alex`,url:r.link})
+  companies.set(key,{id:`live-${index}`,name,location:'Company details not verified',size:'',website:'Not verified',type,score:Math.min(96,72+matches*6+(type==='funded'?6:3)),signal:r.title,bullets:[`Evidence: ${r.title}`,`Source: ${source}`,matches?`Matches your offer on ${matches} capability${matches===1?'':'ies'}`:'Matches the offer-filtered search'],whyNow:[r.title,`Published by ${source}.`,'Company identity and contact details still need verification before outreach.'],news:[news],roles:[],trendDelta:'—',trendLabel:'No verified trend data',spark:[],outreach:'',url:r.link})
  }
  return [...companies.values()].sort((a,b)=>dateTimestamp(leadDate(b))-dateTimestamp(leadDate(a))||b.score-a.score)
 }
@@ -262,7 +271,7 @@ function App(){
   // demand when the card is opened instead of spending model time on every lead.
   // With a configured backend the field stays empty until the outreach agent
   // returns a focused draft. Demo mode keeps the curated sample message.
-  setOutreach(API?'':normalizeOutreach(next.outreach));setContact('');setRole('');setChannel('Email');setSubject('');setRegeneration(0);setRegenerating(false);setOutreachError('')
+  setOutreach('');setContact('');setRole('');setChannel('Email');setSubject('');setRegeneration(0);setRegenerating(false);setOutreachError('')
  }
  async function openHistoryResult(next:Lead){setLeads([next]);setSelected(0);prepareOutreach(next);location.hash='';setScreen('detail');setEnriching(true);const enriched=await enrichLead(next);setLeads([enriched]);setEnriching(false);await generateOutreach(enriched,0,'','','Email')}
  async function copy(){const prefix=channel==='Email'&&subject?`Subject: ${subject}\n\n`:'';await navigator.clipboard?.writeText(prefix+outreach);setCopied(true);setTimeout(()=>setCopied(false),1600)}
@@ -287,7 +296,8 @@ function App(){
   try{
    if(!API)throw new Error('AI outreach requires VITE_XANO_API_BASE')
    const evidence=target.news.map(item=>({title:item.title,source:item.source,date:item.date,url:item.url||target.url})).slice(0,5)
-   const response=await fetch(`${API}/outreach/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:target.name,offer:offer.trim().slice(0,MAX_RESEARCH_OFFER_LENGTH),signal:target.signal,evidence,contact:contactValue.trim(),role:roleValue.trim(),channel:channelValue,variation})})
+   const safeOffer=outreachOfferProfile(offer,industry)
+   const response=await fetch(`${API}/outreach/generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company:target.name,offer:safeOffer,signal:target.signal,evidence,contact:contactValue.trim(),role:roleValue.trim(),channel:channelValue,variation})})
    const data=await response.json().catch(()=>null),draft=outreachPayload(data)
    if(!response.ok||!draft)throw new Error(`AI draft failed (${response.status})`)
    setOutreach(normalizeOutreach(draft.message));setSubject(channelValue==='Email'?draft.subject:'');setRegeneration(variation)
@@ -313,7 +323,7 @@ function HistoryPage({onOpenResult}:{onOpenResult:(lead:Lead)=>void}){
  async function openRun(run:ResearchRun){setActive(run);setAnswers([]);setDetailLoading(true);setError('');try{const res=await fetch(`${API}/research/${run.id}/results`);if(!res.ok)throw new Error(`Answers failed (${res.status})`);const data=await res.json();const items:SavedResult[]=data.items||data||[];setAnswers([...items].sort((a,b)=>timestamp(b.published_at)-timestamp(a.published_at)))}catch(e){setError(e instanceof Error?e.message:'Could not load answers')}finally{setDetailLoading(false)}}
  const date=(value?:string)=>value?new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date(value)):'—'
  const publishedDate=(value?:string|number)=>value?new Intl.DateTimeFormat(undefined,{year:'numeric',month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(value)):'Date unavailable'
- function compose(item:SavedResult){const title=item.title||'Recent company signal',name=companyFrom(title)||item.source_name||'Prospect';onOpenResult({id:`history-${item.id}`,name,location:active?.location||'Location not verified',size:'',website:'Not verified',type:signalType(title),score:75,signal:title,bullets:[`Evidence: ${title}`,`Source: ${item.source_name||'Google News'}`],whyNow:[title,'This signal was saved in your request history.'],news:[{title,source:item.source_name||'Google News',date:publishedDate(item.published_at),url:item.link}],roles:[],trendDelta:'—',trendLabel:'No verified trend data',spark:[],url:item.link,outreach:`Hi ${name} team,\n\nI came across the recent news: ${title}\n\n${active?.offer||'We may be able to help with your current priorities'}. Would a short conversation be useful?\n\n- Alex`})}
+ function compose(item:SavedResult){const title=item.title||'Recent company signal',name=companyFrom(title)||item.source_name||'Prospect';onOpenResult({id:`history-${item.id}`,name,location:active?.location||'Location not verified',size:'',website:'Not verified',type:signalType(title),score:75,signal:title,bullets:[`Evidence: ${title}`,`Source: ${item.source_name||'Google News'}`],whyNow:[title,'This signal was saved in your request history.'],news:[{title,source:item.source_name||'Google News',date:publishedDate(item.published_at),url:item.link}],roles:[],trendDelta:'—',trendLabel:'No verified trend data',spark:[],url:item.link,outreach:''})}
  return <main className="historyPage"><div className="historyHead"><div><small className="kicker">Xano request log</small><h1>Request history</h1><p>Inputs sent from the frontend and the saved SerpApi response for every run.</p></div><button className="secondary" onClick={()=>location.reload()}><RefreshCw/> Refresh</button></div>{error&&<p className="error historyError">{error}</p>}{loading?<div className="empty"><LoaderCircle className="spin"/> Loading requests…</div>:!runs.length?<div className="empty">No requests yet.</div>:<div className="historyGrid"><section className="runList">{runs.map(run=><button key={run.id} className={active?.id===run.id?'run active':'run'} onClick={()=>openRun(run)}><span><b>#{run.id} · {run.industry}</b><em className={`status ${run.status}`}>{run.status}</em></span><small>{date(run.created_at)}</small><p>{run.offer}</p><footer>{run.result_count||0} answers <ArrowRight/></footer></button>)}</section><section className="responsePanel">{!active?<div className="empty">Select a request to see its input and response.</div>:<><div className="responseTitle"><div><small className="kicker">Request #{active.id}</small><h2>{active.industry} · {active.location||'Any location'}</h2></div><span className={`status ${active.status}`}>{active.status}</span></div><dl className="requestMeta"><div><dt>Offer</dt><dd>{active.offer}</dd></div><div><dt>Search query</dt><dd><code>{active.query||'—'}</code></dd></div><div><dt>Started</dt><dd>{date(active.created_at)}</dd></div><div><dt>Completed</dt><dd>{date(active.completed_at)}</dd></div></dl><h3>Response · {answers.length} items</h3>{detailLoading?<div className="empty"><LoaderCircle className="spin"/> Loading response…</div>:<div className="answerList">{answers.map(item=><article key={item.id}><span>{item.position||'—'}</span><div><a href={item.link} target="_blank" rel="noreferrer">{item.title||'Untitled result'}</a><p>{item.source_name||'Unknown source'} · {publishedDate(item.published_at)}</p></div><button className="composeButton" onClick={()=>compose(item)}>Create outreach <ArrowRight/></button></article>)}</div>}<details><summary>Raw saved response</summary><pre>{JSON.stringify(answers.map(x=>x.raw||x),null,2)}</pre></details></>}</section></div>}</main>
 }
 function Field({label,children}:{label:string;children:React.ReactNode}){return <label>{label}{children}</label>}

@@ -3,7 +3,9 @@ query "outreach/generate" verb=POST {
   api_group = "LeadAgent"
   input {
     text company filters=trim|min:1
-    text offer filters=trim|min:10
+    // Only a short, non-personal service profile is accepted here. The raw CV
+    // remains in research context and must never reach the outreach writer.
+    text offer filters=trim|min:10|max:500
     text signal filters=trim|min:1
     json evidence?
     text contact? filters=trim
