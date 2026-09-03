@@ -27,6 +27,8 @@ query "cv/extract" verb=POST {
       timeout = 60
     } as $extraction
   }
-  response = $extraction.response.result
+  // Keep the public endpoint response small and compatible with the frontend:
+  // { resume_text: "..." } rather than the extraction service envelope.
+  response = $extraction.response.result.output.data
   guid = "qPpOwrEYMS7iBsKQ4YzI-1Aconw"
 }
