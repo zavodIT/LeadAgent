@@ -14,7 +14,7 @@ LeadAgent turns live market signals into explainable, ready-to-contact B2B oppor
 1. Copy `.env.example` to `.env` and set `VITE_XANO_API_BASE` after the Xano API group is deployed.
 2. Add `SERPAPI_API_KEY` under Xano Dashboard > Keys & Variables. Never expose it in Vite variables.
 3. Add `NUTRIENT_API_KEY` under Xano Dashboard > Keys & Variables for PDF generation.
-4. Add a Data Extraction API key as `NUTRIENT_EXTRACT_API_KEY` for CV text extraction.
+4. Add a Data Extraction API key as `NUTRIENT_EXTRACT_API_KEY` for sanitized CV profile extraction.
 5. Run `npm install` and `npm run dev`.
 
 ## Xano workflow
@@ -42,6 +42,14 @@ same endpoint regenerates drafts for the selected contact, role, and channel.
 
 The current agent uses Xano's free development model, so no model credential is
 stored in the repository or exposed to Vite.
+
+## CV profile extraction
+
+`POST /cv/extract` uses Nutrient Data Extraction with a constrained schema. It
+returns a synthesized `professional_profile` of at most 120 words containing
+only sellable capabilities, technologies, industries, and seniority. Names,
+contact details, locations, links, employers, education, and dates are explicitly
+excluded before the profile reaches qualification or outreach.
 
 ## PDF generation
 
