@@ -246,7 +246,7 @@ function App(){
   const record=value as Record<string,unknown>
   const pages=Array.isArray(record.pages)?record.pages.map(page=>extractedResume(page)).filter(Boolean).join('\n'):''
   if(pages)return pages
-  for(const key of ['resume_text','plainText','markdown','text','value','data','output','result']){const found=extractedResume(record[key]);if(found)return found}
+  for(const key of ['professional_profile','resume_text','plainText','markdown','text','value','data','output','result']){const found=extractedResume(record[key]);if(found)return found}
   return ''
  }
  function extractionError(value:unknown):string{
