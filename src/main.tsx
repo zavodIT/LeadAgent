@@ -265,7 +265,17 @@ function App(){
   try{if(!API)throw new Error('VITE_XANO_API_BASE is not configured');if(file.size>10*1024*1024)throw new Error('CV must be smaller than 10 MB');const form=new FormData();form.append('file',file);const response=await fetch(`${API}/cv/extract`,{method:'POST',body:form});const data=await response.json().catch(()=>null);const serviceError=extractionError(data);if(!response.ok||serviceError)throw new Error(serviceError||`CV extraction failed (${response.status})`);const text=extractedResume(data).trim();if(!text)throw new Error('No text could be extracted from this CV');setOffer(text.slice(0,MAX_OFFER_LENGTH))}catch(e){setCvName('');setError(e instanceof Error?e.message:'Could not extract this CV')}finally{setCvLoading(false)}
  }
  async function search(){setError('');setMsg(0);setSignalCount(0);setScreen('loading');try{let next=demo;if(API){const researchOffer=offer.trim().slice(0,MAX_RESEARCH_OFFER_LENGTH);const runResearch=async(offerQuery:string)=>{const response=await fetch(`${API}/research`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({offer:researchOffer,offer_query:offerQuery,industry,location:market,stages:[size],signals:['funding','hiring','launch']})});if(!response.ok){const body=await response.json().catch(()=>null) as {message?:string}|null;throw new Error(body?.message||`Research failed (${response.status})`)}return response.json()};let data=await runResearch(offerSearchTerms(researchOffer,industry));if(!(data.results||[]).length)data=await runResearch('startup OR software OR technology');if(data.search_error)throw new Error(`Search failed: ${data.search_error}`);setSignalCount((data.results||[]).length);next=fromQualification(data.qualification);if(!next.length)next=fromResults(data.results||[],researchOffer,industry)}else setSignalCount(demo.reduce((count,lead)=>count+lead.news.length,0));setLeads(next);setScreen('results')}catch(e){setError(e instanceof Error?e.message:'Research failed');setScreen('form')}}
- async function open(i:number){const initial=leads[i];setSelected(i);prepareOutreach(initial);setScreen('detail');setEnriching(true);const enriched=websiteUrl(initial.website)&&initial.description?initial:await enrichLead(initial);setLeads(current=>current.map((item,index)=>index===i?enriched:item));setEnriching(false);await generateOutreach(enriched,0,'','','Email')}
+ async function open(i:number){
+  const initial=leads[i]
+  setSelected(i);prepareOutreach(initial);setScreen('detail');setEnriching(true)
+  // The draft only needs the already-qualified signal and evidence. Generate it
+  // alongside profile enrichment so the composer is never waiting on company data.
+  const enrichment=websiteUrl(initial.website)&&initial.description?Promise.resolve(initial):enrichLead(initial)
+  const drafting=generateOutreach(initial,0,'','','Email')
+  const enriched=await enrichment
+  setLeads(current=>current.map((item,index)=>index===i?enriched:item));setEnriching(false)
+  await drafting
+ }
  function prepareOutreach(next:Lead){
   // Qualification returns only ranking/evidence. Draft the initial message on
   // demand when the card is opened instead of spending model time on every lead.
@@ -273,7 +283,13 @@ function App(){
   // returns a focused draft. Demo mode keeps the curated sample message.
   setOutreach('');setContact('');setRole('');setChannel('Email');setSubject('');setRegeneration(0);setRegenerating(false);setOutreachError('')
  }
- async function openHistoryResult(next:Lead){setLeads([next]);setSelected(0);prepareOutreach(next);location.hash='';setScreen('detail');setEnriching(true);const enriched=await enrichLead(next);setLeads([enriched]);setEnriching(false);await generateOutreach(enriched,0,'','','Email')}
+ async function openHistoryResult(next:Lead){
+  setLeads([next]);setSelected(0);prepareOutreach(next);location.hash='';setScreen('detail');setEnriching(true)
+  const enrichment=enrichLead(next),drafting=generateOutreach(next,0,'','','Email')
+  const enriched=await enrichment
+  setLeads([enriched]);setEnriching(false)
+  await drafting
+ }
  async function copy(){const prefix=channel==='Email'&&subject?`Subject: ${subject}\n\n`:'';await navigator.clipboard?.writeText(prefix+outreach);setCopied(true);setTimeout(()=>setCopied(false),1600)}
  async function downloadPdf(scope:Lead[]=leads,filename='leadagent-report.pdf',title='LeadAgent Intelligence Report'){
   if(pdfLoading)return
