@@ -14,6 +14,7 @@ LeadAgent turns live market signals into explainable, ready-to-contact B2B oppor
 1. Copy `.env.example` to `.env` and set `VITE_XANO_API_BASE` after the Xano API group is deployed.
 2. Add `SERPAPI_API_KEY` under Xano Dashboard > Keys & Variables. Never expose it in Vite variables.
 3. Add `NUTRIENT_API_KEY` under Xano Dashboard > Keys & Variables for PDF generation.
+4. Add `NUTRIENT_EXTRACT_API_KEY` for CV text extraction.
 4. Run `npm install` and `npm run dev`.
 
 ## Xano workflow

@@ -19,7 +19,7 @@ query "cv/extract" verb=POST {
           }
         }|json_encode)
       headers = []
-        |array_push:("Authorization: Bearer " ~ $env.NUTRIENT_API_KEY)
+        |array_push:("Authorization: Bearer " ~ $env.NUTRIENT_EXTRACT_API_KEY)
       timeout = 60
     } as $extraction
   }
